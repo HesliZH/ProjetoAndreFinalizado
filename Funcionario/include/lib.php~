@@ -1,0 +1,183 @@
+<?php
+ 
+  class banco {
+    public $res;
+    public $cnx;
+    public $cheader;
+    function __construct() {
+      $this->cnx=@pg_connect("host=localhost dbname=sce user=postgres password=postgre");
+    }
+    function consulta($sql) {
+      $this->res=pg_query($sql);  
+    }
+    function lista() {
+      echo("<table>");
+      echo("<tr>");
+      for($c=0;$c<count($this->cheader);$c++){
+        echo("<th>".$this->cheader[$c]."</th>");
+      }
+      echo("</tr>");
+      $n=@pg_num_fields($this->res);
+      while($line=@pg_fetch_object($this->res)){
+        echo("<tr>");
+        for($c=0; $c<$n;$c++){ 
+          $campo=@pg_field_name($this->res,$c);
+          echo("<td>".$line->$campo."</td>");
+        }
+        echo("</tr>");
+      }        
+      echo("</table>");  
+    }
+    
+	  function combobox($nome,$id=0){
+      echo("<select name=\"$nome\">");
+      while($line=@pg_fetch_object($this->res)){
+        $codigo=@pg_field_name($this->res,0);
+        $nome=@pg_field_name($this->res,1);
+        if($id==$codigo){
+           echo("<option selected value='".$line->$codigo."'>".$line->$nome."</option>");
+        }else{
+           echo("<option value='".$line->$codigo."'>".$line->$nome."</option>");
+        }   
+      }        
+      echo("</select>");  
+    }
+    function lista2($inc='',$alt='',$exc='') {
+      if($inc) echo("<p align=\"center\"><a href=\"$inc\">Incluir</a></p>");
+      echo("<table id='example' class='display' cellspacing='0' width='100%'>");
+      echo("<thead><tr>");
+      for($c=0;$c<count($this->cheader);$c++){
+        echo("<th>".$this->cheader[$c]."</th>");
+      }
+      echo("</tr></thead><tbody>");
+      $n=pg_num_fields($this->res);
+      $codigo=@pg_field_name($this->res,0);
+      while($line=@pg_fetch_object($this->res)){
+        echo("<tr>");
+        for($c=0; $c<$n;$c++){ 
+          $campo=@pg_field_name($this->res,$c);
+          echo("<td>".$line->$campo."</td>");
+        }
+        if($alt or $exc){
+           echo("<td align=center>");
+           if($alt) echo("<a href=\"$alt?alt=".$line->$codigo."\">Alterar</a> ");
+           if($exc) echo("<a href=\"$exc?exc=".$line->$codigo."\">Excluir</a> ");
+           echo("</td>");
+        }   
+        echo("</tr>");
+     }        
+     echo("</tbody></table>");
+     echo("  <script> $(document).ready(function() {
+                      $('#example').DataTable();
+                      } );
+              </script>");
+    }
+  }
+  function head(){
+    echo("<html>
+            <head>
+                <link rel='stylesheet' href='DT/media/css/jquery.dataTables.min.css'>
+                <script src='DT/media/js/jquery.js'></script>
+                <script src='DT/media/js/jquery.dataTables.min.js'></script>
+                <meta charset=\"UTF-8\">
+                <link rel='stylesheet' href='include/estilo.css'>
+            </head>
+            <body>");
+  }
+	function foot(){
+    echo("</body></html>");
+  }
+  
+  class form{
+     public $campo=array();
+     public $titulo,$method='POST',$action='';
+     function __construct($titulo='Formulário',$action='',$method=''){
+        $this->titulo=$titulo;
+        $this->action=$action;
+        $this->method=$method;
+     }
+     function text($name='obj',$caption='Campo',$size=30,$maxlenght=''){
+        $this->campo[$name]['type']='text';
+        $this->campo[$name]['name']=$name;
+        $this->campo[$name]['caption']=$caption;
+        $this->campo[$name]['size']=$size;
+        $this->campo[$name]['maxlenght']=$maxlenght;
+     }
+     function password($name='obj',$caption='Senha',$size=30,$maxlenght=''){
+        $this->campo[$name]['type']='password';
+        $this->campo[$name]['name']=$name;
+        $this->campo[$name]['caption']=$caption;
+        $this->campo[$name]['size']=$size;
+        $this->campo[$name]['maxlenght']=$maxlenght;
+     }
+     function select($name='obj',$caption='Selecione',$options=array('selecione')){
+        $this->campo[$name]['type']='select';
+        $this->campo[$name]['name']=$name;
+        $this->campo[$name]['caption']=$caption;
+        $this->campo[$name]['options']=$options;
+     }
+     function dbselect($name='obj',$caption='Selecione',$res){
+        $this->campo[$name]['type']='dbselect';
+        $this->campo[$name]['name']=$name;
+        $this->campo[$name]['caption']=$caption;
+        $campo1=@pg_field_name($res,0);
+        $campo2=@pg_field_name($res,1);
+        while($reg=@pg_fetch_object($res)){
+           $options_id[]=$reg->$campo1;
+           $options_dt[]=$reg->$campo2;
+        }
+        $this->campo[$name]['options_id']=$options_id;
+        $this->campo[$name]['options_dt']=$options_dt;
+     }
+     function radio($name='obj',$caption='Selecione',$options=array('selecione')){
+        $this->campo[$name]['type']='radio';
+        $this->campo[$name]['name']=$name;
+        $this->campo[$name]['caption']=$caption;
+        $this->campo[$name]['options']=$options;
+     }
+     function carrega($reg){
+        foreach(array_keys($this->campo) as $key){
+           @$this->campo[$key]['value']=$reg->$key;
+        }   
+     }
+     function show(){
+        echo("<form name=\"frm\" action=\"".$this->action."\" method=\"".$this->method."\">\n");
+        echo("<table border=\"0\" align=\"center\" width=\"90%\">\n");
+        echo("<tr><th align=\"center\" colspan=2><b>$this->titulo</b></th></tr>\n");
+        foreach(array_keys($this->campo) as $key){
+           if(@$this->campo[$key]['maxlenght']){$maxlenght=" maxlenght=\"".$this->campo[$key]['type']."\" ";}else{$maxlenght='';}
+           if($this->campo[$key]['type']=='text'){
+              echo("<tr><td align=\"right\"><b>".$this->campo[$key]['caption']." : </b></td><td><input type=\"".$this->campo[$key]['type']."\" size=\"".$this->campo[$key]['size']."\" $maxlenght value=\"".$this->campo[$key]['value']."\"></td></tr>\n");
+           }elseif($this->campo[$key]['type']=='select'){
+              echo("<tr><td align=\"right\"><b>".$this->campo[$key]['caption']." : </b></td><td><select name=\"".$this->campo[$key]['name']."\">\n");
+              echo("<option value=''> Selecione</option>\n");
+              for($c=0;$c<count($this->campo[$key]['options']);$c++){
+                 if($this->campo[$key]['value']==$this->campo[$key]['options'][$c]){$sel="selected";}else{$sel="";}
+                 echo("<option value=\"".$this->campo[$key]['options'][$c]."\">".$this->campo[$key]['options'][$c]."</option>\n");
+              }
+              echo("</select></td></tr>\n");
+           }elseif($this->campo[$key]['type']=='dbselect'){
+              echo("<tr><td align=\"right\"><b>".$this->campo[$key]['caption']." : </b></td><td><select name=\"".$this->campo[$key]['name']."\">\n");
+              echo("<option value=''> Selecione</option>\n");
+              for($c=0;$c<count($this->campo[$key]['options_id']);$c++){
+                 if($this->campo[$key]['value']==$this->campo[$key]['options_id'][$c]){$sel="selected";}else{$sel="";}
+                 echo("<option value=\"".$this->campo[$key]['options_id'][$c]."\">".$this->campo[$key]['options_dt'][$c]."</option>\n");
+              }
+              echo("</select></td></tr>\n");
+           }elseif($this->campo[$key]['type']=='radio'){
+              echo("<tr><td align=\"right\"><b>".$this->campo[$key]['caption']." : </b></td><td>\n");
+              for($c=0;$c<count($this->campo[$key]['options']);$c++){
+                 if($this->campo[$key]['value']==$this->campo[$key]['options'][$c]){$sel="selected";}else{$sel="";}
+                 echo("<input type=\"radio\" name=\"".$this->campo[$key]['name']."\" value=\"".$this->campo[$key]['options'][$c]."\"> ".$this->campo[$key]['options'][$c]."<br>\n");
+              }
+              echo("</td></tr>\n");
+           }elseif($this->campo[$key]['type']=='password'){
+              echo("<tr><td align=\"right\"><b>".$this->campo[$key]['caption']." : </b></td><td><input type=\"".$this->campo[$key]['type']."\" size=\"".$this->campo[$key]['size']."\" $maxlenght></td></tr>\n");
+           }     
+        }
+        echo("<tr><th align=\"center\" colspan=2><input type=\"submit\" value=\"SALVAR\"></th></tr>\n");
+        echo("</table>\n</form>\n");
+     }
+  }
+  
+?>

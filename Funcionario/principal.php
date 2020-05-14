@@ -1,0 +1,29 @@
+<?php
+   session_start();
+   require("include/lib.php");
+   if(!$_SESSION['codigo']){
+      header("location:index.php");
+   }
+   head();
+   require("topo.php"); 
+   if($_GET['pag']=='consultaSetor'){
+      require("consultaSetor.php");
+   }elseif($_GET['pag']=='cadsta'){
+      require("cadsta.php");
+   }elseif($_GET['pag']=='cadfun'){
+      require("cadfun.php");
+   }elseif($_GET['pag']=='a'){
+      require("a.php");
+   }elseif($_GET['pag']=='cadlivro'){
+       require("cadlivro.php");
+   }elseif($_GET['pag']=='cadcli'){
+       require("cadcli.php"); 
+   }elseif($_GET['pag']=='alugalivro'){
+       require("alugalivro.php");
+   }elseif($_GET['pag']=='devolvelivro'){
+       require("devolvelivro.php");
+   }/*else{
+      require("principal.php");
+   }	*/ 
+   foot();
+?>
